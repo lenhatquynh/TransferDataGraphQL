@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { NotFound } from "../../components";
 import toast from "react-hot-toast";
-import { QUERY_KEYS } from "../../shared/constant";
 import { Skeleton } from "primereact/skeleton";
 import { Resident } from "../../types";
 import { Button } from "primereact/button";

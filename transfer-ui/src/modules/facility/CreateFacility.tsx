@@ -7,7 +7,6 @@ import toast from "react-hot-toast";
 import { useContext } from "react";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
-import { QUERY_KEYS } from "../../shared/constant";
 
 export const CreateFacility = () => {
   const createFacilityMutation = useCreateFacilityMutation();

@@ -7,7 +7,6 @@ import { NotFound } from "../../components";
 import { Facility } from "../../types";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { QUERY_KEYS } from "../../shared/constant";
 import { useContext } from "react";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";

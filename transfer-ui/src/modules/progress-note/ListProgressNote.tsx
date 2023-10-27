@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { NotFound } from "../../components";
-import { QUERY_KEYS } from "../../shared/constant";
 import toast from "react-hot-toast";
 import { Skeleton } from "primereact/skeleton";
 import { ProgressNote } from "../../types";

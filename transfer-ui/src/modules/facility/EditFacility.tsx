@@ -9,7 +9,6 @@ import { useContext, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
-import { QUERY_KEYS } from "../../shared/constant";
 
 export const EditFacility = () => {
   const { id } = useParams();

@@ -10,7 +10,6 @@ import { Calendar } from "primereact/calendar";
 import { Dropdown } from "primereact/dropdown";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
-import { QUERY_KEYS } from "../../shared/constant";
 
 export const EditResident = () => {
   const { id } = useParams();
