@@ -4,6 +4,15 @@ using TransferGraphQL.GraphQL;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost4200",
+        builder => builder
+            .WithOrigins("http://localhost:3000") // Allow requests from this origin
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
 // Add DbContext
 builder.Services.AddDbContext<AppDbContext>(
     options => {

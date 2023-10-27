@@ -54,13 +54,13 @@ namespace TransferGraphQL.GraphQL
         }
 
         //Resident
-        public async Task<Resident> UpdateResident(Guid id, ResidentVM residentVM)
+        public Resident UpdateResident(Guid id, ResidentVM residentVM)
         {
-            var resident = await _context.Residents.Include(r => r.Facility).FirstOrDefaultAsync(f => f.Id == id);
-            var facility = await _context.Facilities.FirstOrDefaultAsync(f => f.Id == residentVM.FacilityId);
+            var resident = _context.Residents.FirstOrDefault(f => f.Id == id);
+            var facility = _context.Facilities.FirstOrDefault(f => f.Id == residentVM.FacilityId);
 
-            if (resident == null) throw new Exception($"Resident with ID {id} not found!");
             if (facility == null) throw new Exception($"Facility with ID {residentVM.FacilityId} is not existed!");
+            if (resident == null) throw new Exception($"Resident with ID {id} not found!");
 
             resident.FirstName = residentVM.FirstName;
             resident.LastName = residentVM.LastName;
@@ -68,7 +68,7 @@ namespace TransferGraphQL.GraphQL
             resident.FacilityId = residentVM.FacilityId;
             _context.Residents.Update(resident);
             _context.SaveChanges();
-
+            resident.Facility = facility;
             return resident;
         }
 
@@ -108,8 +108,8 @@ namespace TransferGraphQL.GraphQL
         //ProgressNote
         public async Task<ProgressNote> UpdateProgressNote(Guid id, ProgressNoteVM progressNoteVM)
         {
-            var progressNote = await _context.ProgressNotes.Include(r => r.Resident).ThenInclude(p => p.Facility).FirstOrDefaultAsync(f => f.Id == id);
-            var resident = await _context.Residents.Include(r => r.Facility).FirstOrDefaultAsync(f => f.Id == progressNoteVM.ResidentId);
+            var progressNote = await _context.ProgressNotes.FirstOrDefaultAsync(f => f.Id == id);
+            var resident = await _context.Residents.FirstOrDefaultAsync(f => f.Id == progressNoteVM.ResidentId);
 
             if (progressNote == null) throw new Exception($"ProgressNote with ID {id} not found!");
             if (resident == null) throw new Exception($"Resident with ID {progressNoteVM.ResidentId} is not existed!");
@@ -121,6 +121,7 @@ namespace TransferGraphQL.GraphQL
 
             _context.ProgressNotes.Update(progressNote);
             _context.SaveChanges();
+            progressNote.Resident = resident;
 
             return progressNote;
         }

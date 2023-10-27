@@ -1,0 +1,149 @@
+type Query {
+  facilities: [Facility!]!
+  facility(id: UUID!): Facility!
+  residents: [Resident!]!
+  resident(id: UUID!): Resident!
+  progressNotes: [ProgressNote!]!
+  progressNote(id: UUID!): ProgressNote!
+}
+
+type Mutation {
+  updateFacility(input: UpdateFacilityInput!): UpdateFacilityPayload!
+  addFacility(input: AddFacilityInput!): AddFacilityPayload!
+  deleteFacility(input: DeleteFacilityInput!): DeleteFacilityPayload!
+  updateResident(input: UpdateResidentInput!): UpdateResidentPayload!
+  addResident(input: AddResidentInput!): AddResidentPayload!
+  deleteResident(input: DeleteResidentInput!): DeleteResidentPayload!
+  updateProgressNote(
+    input: UpdateProgressNoteInput!
+  ): UpdateProgressNotePayload!
+  addProgressNote(input: AddProgressNoteInput!): AddProgressNotePayload!
+  deleteProgressNote(
+    input: DeleteProgressNoteInput!
+  ): DeleteProgressNotePayload!
+}
+
+scalar UUID @specifiedBy(url: "https://tools.ietf.org/html/rfc4122")
+
+type Facility {
+  id: UUID!
+  name: String!
+  address: String!
+}
+
+type Resident {
+  id: UUID!
+  firstName: String!
+  lastName: String!
+  dob: DateTime!
+  facilityId: UUID!
+  facility: Facility
+}
+
+type ProgressNote {
+  id: UUID!
+  content: String!
+  type: String!
+  createdDate: DateTime!
+  residentId: UUID!
+  resident: Resident
+}
+
+input FacilityVMInput {
+  name: String!
+  address: String!
+}
+
+input ResidentVMInput {
+  firstName: String!
+  lastName: String!
+  dob: DateTime!
+  facilityId: UUID!
+}
+
+input ProgressNoteVMInput {
+  content: String!
+  type: String!
+  createdDate: DateTime!
+  residentId: UUID!
+}
+
+"""
+The `DateTime` scalar represents an ISO-8601 compliant date time type.
+"""
+scalar DateTime @specifiedBy(url: "https://www.graphql-scalars.com/date-time")
+
+input UpdateFacilityInput {
+  id: UUID!
+  facilityVM: FacilityVMInput!
+}
+
+type UpdateFacilityPayload {
+  facility: Facility
+}
+
+input AddFacilityInput {
+  facilityVM: FacilityVMInput!
+}
+
+type AddFacilityPayload {
+  facility: Facility
+}
+
+input DeleteFacilityInput {
+  id: UUID!
+}
+
+type DeleteFacilityPayload {
+  facility: Facility
+}
+
+input UpdateResidentInput {
+  id: UUID!
+  residentVM: ResidentVMInput!
+}
+
+type UpdateResidentPayload {
+  resident: Resident
+}
+
+input AddResidentInput {
+  residentVM: ResidentVMInput!
+}
+
+type AddResidentPayload {
+  resident: Resident
+}
+
+input DeleteResidentInput {
+  id: UUID!
+}
+
+type DeleteResidentPayload {
+  resident: Resident
+}
+
+input UpdateProgressNoteInput {
+  id: UUID!
+  progressNoteVM: ProgressNoteVMInput!
+}
+
+type UpdateProgressNotePayload {
+  progressNote: ProgressNote
+}
+
+input AddProgressNoteInput {
+  progressNoteVM: ProgressNoteVMInput!
+}
+
+type AddProgressNotePayload {
+  progressNote: ProgressNote
+}
+
+input DeleteProgressNoteInput {
+  id: UUID!
+}
+
+type DeleteProgressNotePayload {
+  progressNote: ProgressNote
+}

@@ -1,0 +1,7 @@
+schema: ./src/data/schema.graphql
+documents: ''
+extensions:
+  codegen:
+    generates:
+      ./src/__generate__:
+        plugins: []
