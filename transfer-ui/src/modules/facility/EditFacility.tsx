@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -9,13 +9,36 @@ import { useContext, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
+import { GET_FACILITY_BY_ID } from "../../graphql-client/queries";
+import { UPDATE_FACILITY } from "../../graphql-client/mutation";
+import { useMutation, useQuery } from "@apollo/client";
+import { UpdateFacilityInput } from "../../types";
 
 export const EditFacility = () => {
   const { id } = useParams();
-  const { data, isError } = useGetFacilityQuery(id as string);
-  const updateFacilityMutation = useUpdateFacilityMutation();
-  const navigate = useNavigate();
   const context = useContext(Context);
+
+  const { data, error } = useQuery(GET_FACILITY_BY_ID, {
+    variables: { id: id },
+  });
+  const [updateFacility] = useMutation(UPDATE_FACILITY);
+  const updateFacilityById = async (input: UpdateFacilityInput) => {
+    try {
+      await updateFacility({
+        variables: { input },
+        onCompleted: () => {
+          toast.success("Update facility successfully!");
+          setShowSpinner(false);
+          window.location.href = "/facility";
+        },
+        onError: () => {
+          toast.error("Update facility failed!");
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   const validationSchema = Yup.object({
     name: Yup.string().trim().required("Name is required"),
@@ -30,25 +53,19 @@ export const EditFacility = () => {
     validationSchema,
     onSubmit: (values) => {
       setShowSpinner(true);
-      updateFacilityMutation.mutate(
-        { id: id as any, name: values.name, address: values.address },
-        {
-          onSuccess: () => {
-            toast.success("Update facility successfully!");
-            setShowSpinner(false);
-            navigate("/facility");
-          },
-          onError: () => toast.error("Update facility failed!"),
-        }
-      );
+      const updateFacilityInput = {
+        id: id,
+        facilityVM: { name: values.name, address: values.address },
+      } as UpdateFacilityInput;
+      updateFacilityById(updateFacilityInput);
     },
   });
 
   useEffect(() => {
-    if (data?.data) {
+    if (data?.facility) {
       formik.setValues({
-        name: data.data.name || "",
-        address: data.data.address || "",
+        name: data.facility.name || "",
+        address: data.facility.address || "",
       });
     }
   }, [data]);
@@ -57,7 +74,7 @@ export const EditFacility = () => {
     return null;
   }
   const { showSpinner, setShowSpinner } = context;
-  if (isError) {
+  if (error) {
     return <NotFound />;
   }
   return (

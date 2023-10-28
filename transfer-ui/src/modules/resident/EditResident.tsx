@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { InputText } from "primereact/inputtext";
@@ -11,22 +11,50 @@ import { Dropdown } from "primereact/dropdown";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
 
+import { useMutation, useQuery } from "@apollo/client";
+import {
+  GET_RESIDENT_BY_ID,
+  GET_FACILITIES,
+} from "../../graphql-client/queries";
+import { UPDATE_RESIDENT } from "../../graphql-client/mutation";
+import { Facility, UpdateResidentInput } from "../../types";
+
+const validationSchema = Yup.object({
+  firstName: Yup.string().trim().required("First name is required"),
+  lastName: Yup.string().trim().required("Last name is required"),
+  dob: Yup.date()
+    .required("Date of Birth is required")
+    .max(new Date(), "Date of Birth cannot be in the future"),
+  facilityId: Yup.string().required("Facility is required"),
+});
+
 export const EditResident = () => {
   const { id } = useParams();
-  const { data, isError } = useGetResidentQuery(id as string);
-  const facilities = useGetAllFacilitiesQuery();
-  const updateResidentMutation = useUpdateResidentMutation();
-  const navigate = useNavigate();
   const context = useContext(Context);
-
-  const validationSchema = Yup.object({
-    firstName: Yup.string().trim().required("First name is required"),
-    lastName: Yup.string().trim().required("Last name is required"),
-    dob: Yup.date()
-      .required("Date of Birth is required")
-      .max(new Date(), "Date of Birth cannot be in the future"),
-    facilityId: Yup.string().required("Facility is required"),
+  const { data, error, loading } = useQuery(GET_RESIDENT_BY_ID, {
+    variables: { id: id },
   });
+  const _FacilitiesQuery = useQuery(GET_FACILITIES);
+
+  const [updateResident] = useMutation(UPDATE_RESIDENT);
+
+  const updateResidentById = async (input: UpdateResidentInput) => {
+    try {
+      await updateResident({
+        variables: { input },
+        onCompleted: () => {
+          toast.success("Update resident successfully!");
+          setShowSpinner(false);
+          window.location.href = "/resident";
+        },
+        onError: () => {
+          toast.error("Update resident failed!");
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -38,45 +66,47 @@ export const EditResident = () => {
     validationSchema,
     onSubmit: (values) => {
       setShowSpinner(true);
-      updateResidentMutation.mutate(
-        {
-          id: id as any,
+      const updateResidentInput = {
+        id: id,
+        residentVM: {
           firstName: values.firstName,
           lastName: values.lastName,
           dob: values.dob,
           facilityId: values.facilityId,
         },
-        {
-          onSuccess: () => {
-            toast.success("Update resident successfully!");
-            setShowSpinner(false);
-            navigate("/resident");
-          },
-          onError: () => toast.error("Update resident failed!"),
-        }
-      );
+      } as UpdateResidentInput;
+      updateResidentById(updateResidentInput);
     },
   });
 
   useEffect(() => {
-    if (data?.data) {
+    if (data?.resident) {
       formik.setValues({
-        firstName: data.data.firstName,
-        lastName: data.data.lastName,
-        dob: new Date(data.data.dob),
-        facilityId: data.data.facility?.id as any,
+        firstName: data.resident.firstName,
+        lastName: data.resident.lastName,
+        dob: new Date(data.resident.dob),
+        facilityId: data.resident.facility?.id as any,
       });
     }
   }, [data]);
+
+  if (loading || _FacilitiesQuery.loading) {
+    return (
+      <ProgressSpinner className="z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+    );
+  }
+  if (error || _FacilitiesQuery.loading) {
+    return <NotFound />;
+  }
+  const facilities = _FacilitiesQuery.data?.facilities as Facility[];
+
   if (!context) {
     return null;
   }
   const { showSpinner, setShowSpinner } = context;
-  if (isError) {
-    return <NotFound />;
-  }
+
   const facilityOptions =
-    facilities.data?.data.map((facility) => ({
+    facilities.map((facility) => ({
       label: facility.name,
       value: facility.id,
     })) || [];

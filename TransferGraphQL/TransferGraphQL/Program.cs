@@ -7,12 +7,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add CORS policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost4200",
+    options.AddPolicy("AllowLocalhost3000",
         builder => builder
-            .WithOrigins("http://localhost:3000") // Allow requests from this origin
+            .WithOrigins("http://localhost:3000")
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
+
 // Add DbContext
 builder.Services.AddDbContext<AppDbContext>(
     options => {
@@ -35,6 +36,7 @@ var app = builder.Build();
 
 app.UseStaticFiles();
 app.MapGet("/", () => "Hello World!");
+app.UseCors("AllowLocalhost3000");
 app.MapGraphQL();
 app.Run();
 

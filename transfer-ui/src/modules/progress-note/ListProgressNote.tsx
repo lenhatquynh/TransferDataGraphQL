@@ -10,29 +10,51 @@ import { customDate } from "../../shared/utils";
 import { useContext } from "react";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
+
+import { useQuery, useMutation } from "@apollo/client";
+import { GET_PROGRESSNOTES } from "../../graphql-client/queries";
+import { DELETE_PROGRESS_NOTE } from "../../graphql-client/mutation";
+
 export function ListProgressNote() {
-  const { data, isLoading, isError } = useGetAllProgressNotesQuery();
-  const deleteProgressNoteMutation = useDeleteProgressNoteMutation();
+  const { loading, error, data, refetch } = useQuery(GET_PROGRESSNOTES);
+  const [deleteProgressNote] = useMutation(DELETE_PROGRESS_NOTE);
+
   const navigate = useNavigate();
   const context = useContext(Context);
+  const deleteExistingProgressNote = async (id: string) => {
+    try {
+      await deleteProgressNote({
+        variables: { id },
+        onCompleted: (data) => {
+          refetch({ progressNotes });
+          toast.success("Delete progress note successfully!");
+          setShowSpinner(false);
+        },
+        onError: (error) => {
+          toast.error("Delete progress note failed!");
+          setShowSpinner(false);
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
-  if (isError) {
+  if (loading) {
+    return (
+      <ProgressSpinner className="z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+    );
+  }
+  if (error) {
     return <NotFound />;
   }
 
+  const progressNotes = data?.progressNotes as ProgressNote[];
   const handleDelete = (id: string) => {
     setShowSpinner(true);
-    deleteProgressNoteMutation.mutate(id, {
-      onSuccess: () => {
-        toast.success("Delete progress note successfully!");
-        setShowSpinner(false);
-      },
-      onError: () => {
-        toast.error("Delete progress note failed!");
-        setShowSpinner(false);
-      },
-    });
+    deleteExistingProgressNote(id);
   };
+
   const bodySkeleton = () => {
     return <Skeleton></Skeleton>;
   };
@@ -76,7 +98,7 @@ export function ListProgressNote() {
         <ProgressSpinner className="z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
       )}
       <DataTable
-        value={data?.data}
+        value={progressNotes}
         className="p-datatable-striped"
         removableSort
         scrollable
@@ -86,21 +108,21 @@ export function ListProgressNote() {
           field="id"
           header="Id"
           style={{ width: "10%" }}
-          body={isLoading ? bodySkeleton : null}
+          body={loading ? bodySkeleton : null}
           sortable
         ></Column>
         <Column
           field="content"
           header="Content"
           style={{ width: "17%" }}
-          body={isLoading ? bodySkeleton : null}
+          body={loading ? bodySkeleton : null}
           sortable
         ></Column>
         <Column
           field="type"
           header="Type"
           style={{ width: "17%" }}
-          body={isLoading ? bodySkeleton : null}
+          body={loading ? bodySkeleton : null}
           sortable
         ></Column>
         <Column
@@ -108,7 +130,7 @@ export function ListProgressNote() {
           header="Created Date"
           style={{ width: "17%" }}
           body={
-            isLoading
+            loading
               ? bodySkeleton
               : (rowData: ProgressNote) => customDate(rowData.createdDate)
           }
@@ -119,7 +141,7 @@ export function ListProgressNote() {
           header="Resident"
           style={{ width: "17%" }}
           body={
-            isLoading
+            loading
               ? bodySkeleton
               : (rowData: ProgressNote) => {
                   return (
@@ -135,7 +157,7 @@ export function ListProgressNote() {
           field="action"
           header="Action"
           style={{ width: "20%" }}
-          body={isLoading ? bodySkeleton : bodyActions}
+          body={loading ? bodySkeleton : bodyActions}
         ></Column>
       </DataTable>
     </div>

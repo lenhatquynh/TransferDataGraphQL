@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { InputText } from "primereact/inputtext";
@@ -8,10 +7,32 @@ import { useContext } from "react";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
 
+import { useMutation } from "@apollo/client";
+import { ADD_FACILITY } from "../../graphql-client/mutation";
+import { FacilityVM } from "../../types";
+
 export const CreateFacility = () => {
-  const createFacilityMutation = useCreateFacilityMutation();
-  const navigate = useNavigate();
   const context = useContext(Context);
+
+  const [addFacility] = useMutation(ADD_FACILITY);
+
+  const addNewFacility = async (facilityVM: FacilityVM) => {
+    try {
+      await addFacility({
+        variables: { facilityVM },
+        onCompleted: () => {
+          toast.success("Create facility successfully!");
+          setShowSpinner(false);
+          window.location.href = "/facility";
+        },
+        onError: () => {
+          toast.error("Create facility failed!");
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   const validationSchema = Yup.object({
     name: Yup.string().trim().required("Name is required"),
@@ -26,17 +47,11 @@ export const CreateFacility = () => {
     validationSchema,
     onSubmit: (values) => {
       setShowSpinner(true);
-      createFacilityMutation.mutate(
-        { name: values.name, address: values.address },
-        {
-          onSuccess: () => {
-            toast.success("Create facility successfully!");
-            setShowSpinner(false);
-            navigate("/facility");
-          },
-          onError: () => toast.error("Create facility failed!"),
-        }
-      );
+      const facilityVM = {
+        name: values.name,
+        address: values.address,
+      } as FacilityVM;
+      addNewFacility(facilityVM);
     },
   });
   if (!context) {

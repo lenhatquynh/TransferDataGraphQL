@@ -11,22 +11,50 @@ import { Dropdown } from "primereact/dropdown";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
 
+import {
+  GET_PROGRESS_NOTE_BY_ID,
+  GET_RESIDENTS,
+} from "../../graphql-client/queries";
+import { UPDATE_PROGRESS_NOTE } from "../../graphql-client/mutation";
+import { Resident, UpdateProgressNoteInput } from "../../types";
+import { useMutation, useQuery } from "@apollo/client";
+
+const validationSchema = Yup.object({
+  content: Yup.string().trim().required("Content is required"),
+  type: Yup.string().trim().required("Type is required"),
+  createdDate: Yup.date()
+    .required("Created Date is required")
+    .max(new Date(), "Created Date cannot be in the future"),
+  residentId: Yup.string().required("Resident is required"),
+});
+
 export const EditProgressNote = () => {
   const { id } = useParams();
-  const { data, isError } = useGetProgressNoteQuery(id as string);
-  const residents = useGetAllResidentsQuery();
-  const updateProgressNoteMutation = useUpdateProgressNoteMutation();
-  const navigate = useNavigate();
   const context = useContext(Context);
-
-  const validationSchema = Yup.object({
-    content: Yup.string().trim().required("Content is required"),
-    type: Yup.string().trim().required("Type is required"),
-    createdDate: Yup.date()
-      .required("Created Date is required")
-      .max(new Date(), "Created Date cannot be in the future"),
-    residentId: Yup.string().required("Resident is required"),
+  const { data, error, loading } = useQuery(GET_PROGRESS_NOTE_BY_ID, {
+    variables: { id: id },
   });
+  const _ResidentsQuery = useQuery(GET_RESIDENTS);
+
+  const [updateProgressNote] = useMutation(UPDATE_PROGRESS_NOTE);
+
+  const updateProgressNoteById = async (input: UpdateProgressNoteInput) => {
+    try {
+      await updateProgressNote({
+        variables: { input },
+        onCompleted: () => {
+          toast.success("Update progress note successfully!");
+          setShowSpinner(false);
+          window.location.href = "/progress-note";
+        },
+        onError: () => {
+          toast.error("Update progress note failed!");
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -38,45 +66,47 @@ export const EditProgressNote = () => {
     validationSchema,
     onSubmit: (values) => {
       setShowSpinner(true);
-      updateProgressNoteMutation.mutate(
-        {
-          id: id as any,
+      const updateProgressNoteInput = {
+        id: id,
+        progressNoteVM: {
           content: values.content,
-          type: values.type,
+          type: values.content,
           createdDate: values.createdDate,
           residentId: values.residentId,
         },
-        {
-          onSuccess: () => {
-            toast.success("Update progress note successfully!");
-            setShowSpinner(false);
-            navigate("/progress-note");
-          },
-          onError: () => toast.error("Update progress note failed!"),
-        }
-      );
+      } as UpdateProgressNoteInput;
+      updateProgressNoteById(updateProgressNoteInput);
     },
   });
 
   useEffect(() => {
-    if (data?.data) {
+    if (data?.progressNote) {
       formik.setValues({
-        content: data.data.content,
-        type: data.data.type,
-        createdDate: new Date(data.data.createdDate),
-        residentId: data.data.resident?.id as any,
+        content: data.progressNote.content,
+        type: data.progressNote.type,
+        createdDate: new Date(data.progressNote.createdDate),
+        residentId: data.progressNote.resident?.id as any,
       });
     }
   }, [data]);
+
+  if (loading || _ResidentsQuery.loading) {
+    return (
+      <ProgressSpinner className="z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+    );
+  }
+  if (error || _ResidentsQuery.loading) {
+    return <NotFound />;
+  }
+  const residents = _ResidentsQuery.data?.residents as Resident[];
+
   if (!context) {
     return null;
   }
   const { showSpinner, setShowSpinner } = context;
-  if (isError) {
-    return <NotFound />;
-  }
+
   const residentOptions =
-    residents.data?.data.map((resident) => ({
+    residents.map((resident) => ({
       label: resident.firstName + " " + resident.lastName,
       value: resident.id,
     })) || [];

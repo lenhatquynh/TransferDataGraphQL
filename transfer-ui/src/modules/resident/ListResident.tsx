@@ -10,29 +10,51 @@ import { customDate } from "../../shared/utils";
 import { useContext } from "react";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
+
+import { useQuery, useMutation } from "@apollo/client";
+import { GET_RESIDENTS } from "../../graphql-client/queries";
+import { DELETE_RESIDENT } from "../../graphql-client/mutation";
+
 export function ListResident() {
-  const { data, isLoading, isError } = useGetAllResidentsQuery();
-  const deleteResidentMutation = useDeleteResidentMutation();
+  const { loading, error, data, refetch } = useQuery(GET_RESIDENTS);
+  const [deleteResident] = useMutation(DELETE_RESIDENT);
+
   const navigate = useNavigate();
   const context = useContext(Context);
+  const deleteExistingResident = async (id: string) => {
+    try {
+      await deleteResident({
+        variables: { id },
+        onCompleted: () => {
+          refetch({ residents });
+          toast.success("Delete resident successfully!");
+          setShowSpinner(false);
+        },
+        onError: () => {
+          toast.error("Delete resident failed!");
+          setShowSpinner(false);
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
-  if (isError) {
+  if (loading) {
+    return (
+      <ProgressSpinner className="z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+    );
+  }
+  if (error) {
     return <NotFound />;
   }
 
+  const residents = data?.residents as Resident[];
   const handleDelete = (id: string) => {
     setShowSpinner(true);
-    deleteResidentMutation.mutate(id, {
-      onSuccess: () => {
-        toast.success("Delete resident successfully!");
-        setShowSpinner(false);
-      },
-      onError: () => {
-        toast.error("Delete resident failed!");
-        setShowSpinner(false);
-      },
-    });
+    deleteExistingResident(id);
   };
+
   const bodySkeleton = () => {
     return <Skeleton></Skeleton>;
   };
@@ -76,7 +98,7 @@ export function ListResident() {
         <ProgressSpinner className="z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
       )}
       <DataTable
-        value={data?.data}
+        value={residents}
         className="p-datatable-striped"
         removableSort
         scrollable
@@ -86,21 +108,21 @@ export function ListResident() {
           field="id"
           header="Id"
           style={{ width: "10%" }}
-          body={isLoading ? bodySkeleton : null}
+          body={loading ? bodySkeleton : null}
           sortable
         ></Column>
         <Column
           field="firstName"
           header="First Name"
           style={{ width: "17%" }}
-          body={isLoading ? bodySkeleton : null}
+          body={loading ? bodySkeleton : null}
           sortable
         ></Column>
         <Column
           field="lastName"
           header="Last Name"
           style={{ width: "17%" }}
-          body={isLoading ? bodySkeleton : null}
+          body={loading ? bodySkeleton : null}
           sortable
         ></Column>
         <Column
@@ -108,7 +130,7 @@ export function ListResident() {
           header="Date of Birth"
           style={{ width: "17%" }}
           body={
-            isLoading
+            loading
               ? bodySkeleton
               : (rowData: Resident) => customDate(rowData.dob)
           }
@@ -119,7 +141,7 @@ export function ListResident() {
           header="Facility"
           style={{ width: "17%" }}
           body={
-            isLoading
+            loading
               ? bodySkeleton
               : (rowData: Resident) => {
                   return rowData.facility?.name;
@@ -131,7 +153,7 @@ export function ListResident() {
           field="action"
           header="Action"
           style={{ width: "20%" }}
-          body={isLoading ? bodySkeleton : bodyActions}
+          body={loading ? bodySkeleton : bodyActions}
         ></Column>
       </DataTable>
     </div>

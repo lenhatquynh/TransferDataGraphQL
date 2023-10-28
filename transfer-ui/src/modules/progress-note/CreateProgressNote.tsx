@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { InputText } from "primereact/inputtext";
@@ -9,21 +8,25 @@ import { Calendar } from "primereact/calendar";
 import { Dropdown } from "primereact/dropdown";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
+import { useMutation, useQuery } from "@apollo/client";
+import { GET_RESIDENTS } from "../../graphql-client/queries";
+import { ADD_PROGRESS_NOTE } from "../../graphql-client/mutation";
+import { ProgressNoteVM, Resident } from "../../types";
+import { NotFound } from "../../components";
+
+const validationSchema = Yup.object({
+  content: Yup.string().trim().required("Content is required"),
+  type: Yup.string().trim().required("Type is required"),
+  createdDate: Yup.date()
+    .required("Created Date is required")
+    .max(new Date(), "Created Date cannot be in the future"),
+  residentId: Yup.string().required("Resident is required"),
+});
 
 export const CreateProgressNote = () => {
-  const residents = useGetAllResidentsQuery();
-  const createProgressNoteMutation = useCreateProgressNoteMutation();
-  const navigate = useNavigate();
   const context = useContext(Context);
-
-  const validationSchema = Yup.object({
-    content: Yup.string().trim().required("Content is required"),
-    type: Yup.string().trim().required("Type is required"),
-    createdDate: Yup.date()
-      .required("Created Date is required")
-      .max(new Date(), "Created Date cannot be in the future"),
-    residentId: Yup.string().required("Resident is required"),
-  });
+  const { loading, error, data } = useQuery(GET_RESIDENTS);
+  const [addProgressNote] = useMutation(ADD_PROGRESS_NOTE);
 
   const formik = useFormik({
     initialValues: {
@@ -35,24 +38,41 @@ export const CreateProgressNote = () => {
     validationSchema,
     onSubmit: (values) => {
       setShowSpinner(true);
-      createProgressNoteMutation.mutate(
-        {
-          content: values.content,
-          type: values.type,
-          createdDate: values.createdDate,
-          residentId: values.residentId,
-        },
-        {
-          onSuccess: () => {
-            toast.success("Create progress note successfully!");
-            setShowSpinner(false);
-            navigate("/progress-note");
-          },
-          onError: () => toast.error("Create progress note failed!"),
-        }
-      );
+      const progressNoteVM = {
+        content: values.content,
+        type: values.type,
+        createdDate: values.createdDate,
+        residentId: values.residentId,
+      } as ProgressNoteVM;
+      addNewProgressNote(progressNoteVM);
     },
   });
+  const addNewProgressNote = async (progressNoteVM: ProgressNoteVM) => {
+    try {
+      await addProgressNote({
+        variables: { progressNoteVM },
+        onCompleted: () => {
+          toast.success("Create progress note successfully!");
+          setShowSpinner(false);
+          window.location.href = "/progress-note";
+        },
+        onError: () => {
+          toast.error("Create progress note failed!");
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+  if (loading) {
+    return (
+      <ProgressSpinner className="z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+    );
+  }
+  if (error) {
+    return <NotFound />;
+  }
+  const residents = data?.residents as Resident[];
 
   if (!context) {
     return null;
@@ -60,7 +80,7 @@ export const CreateProgressNote = () => {
   const { showSpinner, setShowSpinner } = context;
 
   const residentOptions =
-    residents.data?.data.map((resident) => ({
+    residents.map((resident) => ({
       label: resident.firstName + " " + resident.lastName,
       value: resident.id,
     })) || [];

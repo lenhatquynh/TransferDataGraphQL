@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { InputText } from "primereact/inputtext";
@@ -10,20 +9,25 @@ import { Dropdown } from "primereact/dropdown";
 import { Context } from "../../App";
 import { ProgressSpinner } from "primereact/progressspinner";
 
-export const CreateResident = () => {
-  const facilities = useGetAllFacilitiesQuery();
-  const createResidentMutation = useCreateResidentMutation();
-  const navigate = useNavigate();
-  const context = useContext(Context);
+import { useMutation, useQuery } from "@apollo/client";
+import { ADD_RESIDENT } from "../../graphql-client/mutation";
+import { GET_FACILITIES } from "../../graphql-client/queries";
+import { Facility, ResidentVM } from "../../types";
+import { NotFound } from "../../components";
 
-  const validationSchema = Yup.object({
-    firstName: Yup.string().trim().required("First name is required"),
-    lastName: Yup.string().trim().required("Last name is required"),
-    dob: Yup.date()
-      .required("Date of Birth is required")
-      .max(new Date(), "Date of Birth cannot be in the future"),
-    facilityId: Yup.string().required("Facility is required"),
-  });
+const validationSchema = Yup.object({
+  firstName: Yup.string().trim().required("First name is required"),
+  lastName: Yup.string().trim().required("Last name is required"),
+  dob: Yup.date()
+    .required("Date of Birth is required")
+    .max(new Date(), "Date of Birth cannot be in the future"),
+  facilityId: Yup.string().required("Facility is required"),
+});
+
+export const CreateResident = () => {
+  const context = useContext(Context);
+  const { loading, error, data } = useQuery(GET_FACILITIES);
+  const [addResident] = useMutation(ADD_RESIDENT);
 
   const formik = useFormik({
     initialValues: {
@@ -35,24 +39,41 @@ export const CreateResident = () => {
     validationSchema,
     onSubmit: (values) => {
       setShowSpinner(true);
-      createResidentMutation.mutate(
-        {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          dob: values.dob,
-          facilityId: values.facilityId,
-        },
-        {
-          onSuccess: () => {
-            toast.success("Create resident successfully!");
-            setShowSpinner(false);
-            navigate("/resident");
-          },
-          onError: () => toast.error("Create resident failed!"),
-        }
-      );
+      const residentVM = {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        dob: values.dob,
+        facilityId: values.facilityId,
+      } as ResidentVM;
+      addNewResident(residentVM);
     },
   });
+  const addNewResident = async (residentVM: ResidentVM) => {
+    try {
+      await addResident({
+        variables: { residentVM },
+        onCompleted: () => {
+          toast.success("Create resident successfully!");
+          setShowSpinner(false);
+          window.location.href = "/resident";
+        },
+        onError: () => {
+          toast.error("Create resident failed!");
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+  if (loading) {
+    return (
+      <ProgressSpinner className="z-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+    );
+  }
+  if (error) {
+    return <NotFound />;
+  }
+  const facilities = data?.facilities as Facility[];
 
   if (!context) {
     return null;
@@ -60,7 +81,7 @@ export const CreateResident = () => {
   const { showSpinner, setShowSpinner } = context;
 
   const facilityOptions =
-    facilities.data?.data.map((facility) => ({
+    facilities.map((facility) => ({
       label: facility.name,
       value: facility.id,
     })) || [];
