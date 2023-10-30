@@ -2,24 +2,29 @@
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MultiItemStartupConfigurations />
   <MonoDevelop.Ide.ItemProperties.TransferGraphQL PreferredExecutionTarget="/Applications/Microsoft Edge.app" />
-  <MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workbench ActiveDocument="TransferGraphQL/Program.cs">
+    <Files>
+      <File FileName="TransferGraphQL/GraphQL/Query.cs" />
+      <File FileName="TransferGraphQL/GraphQL/Mutation.cs" />
+      <File FileName="TransferGraphQL/Models/Resident.cs" />
+      <File FileName="TransferGraphQL/Models/Facility.cs" />
+      <File FileName="TransferGraphQL/Program.cs" Line="21" Column="68" />
+    </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
-          <Node name="TransferGraphQL" expanded="True">
+          <Node name="TransferGraphQL">
             <Node name="TransferGraphQL" expanded="True">
-              <Node name="ConnectedServicesFolder" selected="True" />
-              <Node name="Dependencies" expanded="True">
-                <Node name="FrameworkReferences" expanded="True" />
-              </Node>
+              <Node name="GraphQL" expanded="True" />
+              <Node name="Program.cs" selected="True" />
             </Node>
           </Node>
         </State>
       </Pad>
     </Pads>
   </MonoDevelop.Ide.Workbench>
-  <MultiItemStartupConfigurations />
-  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
 </Properties>
